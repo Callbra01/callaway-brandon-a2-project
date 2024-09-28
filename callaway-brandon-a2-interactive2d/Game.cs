@@ -1,5 +1,6 @@
 ﻿// Include code libraries you need below (use the namespace).
 using System;
+using System.Data;
 using System.Drawing;
 using System.Numerics;
 using static System.Net.Mime.MediaTypeNames;
@@ -15,12 +16,15 @@ namespace Game10003
         // Place your variables here:
         int windowWidth = 400;
         int windowHeight = 400;
-        static int[] windowCenter = [0, 0];
-
-        Vector4 testRect = new Vector4(25, 25, 0, 0);
+        int[] windowCenter = [0, 0];
 
         // Player variables
         int playerScore;
+        int playerMovementSpeed = 4;
+        int playerSize = 40;
+        float[] playerPosition = [0, 0];
+        int playerAreaOffset = 45;
+
 
         // Text var
         Color textColor = new Color(245, 245, 245);
@@ -33,7 +37,7 @@ namespace Game10003
         {
             WindowInitialization(windowWidth, windowHeight);
             windowCenter = [windowWidth / 2, windowHeight / 2];
-
+            playerPosition = [windowWidth / 2 - playerSize / 2, windowHeight / 2 - playerSize / 2];
         }
 
         /// <summary>
@@ -44,38 +48,62 @@ namespace Game10003
             Window.ClearBackground(Color.DarkGray);
 
             DrawBackground();
-            HandlePlayerScore();
             HandleInput();
+            DrawPlayer();
 
+            HandlePlayerScore();
         }
-
 
         // Window Setup and Initialization
         void WindowInitialization(int windowWidth, int windowHeight)
         {
             Window.SetTitle("callaway-brandon-a2-falling-game");
             Window.SetSize(windowWidth, windowHeight);
-            Window.TargetFPS = 30;
+            Window.TargetFPS = 60;
         }
 
         void DrawBackground()
         {
-            
+
         }
 
+        // Draw square  at player position
+        // TODO: CHANGE PLAYER SQUARE TO COMPOUND GRAPHICS
+        void DrawPlayer()
+        {
+            Draw.FillColor = new Color(255, 255, 0);
+            Draw.Square(playerPosition[0], playerPosition[1], playerSize);
+        }
+
+        // Check for player input and change player position accordingly
+        // Only allow movement when in bounds defined by window size and custom offset
         void HandleInput()
         {
-            if (Input.IsKeyboardKeyDown(KeyboardInput.W))
+            if (Input.IsKeyboardKeyDown(KeyboardInput.W) && playerPosition[1] > 0 + playerAreaOffset)
             {
+                playerPosition[1] -= Time.DeltaTime * playerMovementSpeed * 100;
+            }
+            else if (Input.IsKeyboardKeyDown(KeyboardInput.S) && playerPosition[1] < windowHeight - playerSize - playerAreaOffset)
+            {
+                playerPosition[1] += Time.DeltaTime * playerMovementSpeed * 100;
+            }
+
+            if (Input.IsKeyboardKeyDown(KeyboardInput.A) && playerPosition[0] > 0 + playerAreaOffset)
+            {
+                playerPosition[0] -= Time.DeltaTime * playerMovementSpeed * 100;
+            }
+            else if (Input.IsKeyboardKeyDown(KeyboardInput.D) && playerPosition[0] < windowWidth - playerSize - playerAreaOffset)
+            {
+                playerPosition[0] += Time.DeltaTime * playerMovementSpeed * 100;
             }
         }
 
         // Draw score text with a black background, check score for win state
         void HandlePlayerScore()
         {
-            int textX = 25;
-            int textY = 350;
-            
+            int textX = 15;
+            int textY = 375;
+
 
             Draw.FillColor = Color.Black;
             Draw.Rectangle(textX - 2, textY - 2, 110 + scoreTextXOffset, 25);
