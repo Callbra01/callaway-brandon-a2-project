@@ -2,6 +2,7 @@
 using System;
 using System.Drawing;
 using System.Numerics;
+using static System.Net.Mime.MediaTypeNames;
 
 // The namespace your code is in.
 namespace Game10003
@@ -12,18 +13,18 @@ namespace Game10003
     public class Game
     {
         // Place your variables here:
-        static int windowWidth = 400;
-        static int windowHeight = 400;
-        static int[] windowCenter = [windowWidth/2, windowHeight/2];
-        float rectSize = 50;
-        Color rectColor = new Color(10, 0, 155);
-        float rectSpeed = 100;
-        int colorChangeRate = 20;
-        // Color variables
+        int windowWidth = 400;
+        int windowHeight = 400;
+        static int[] windowCenter = [0, 0];
 
-        // Rectangle Variables
-        Vector4 rectangleTest = new Vector4(windowCenter[0], windowCenter[1], 0, 0);
-        
+        Vector4 testRect = new Vector4(25, 25, 0, 0);
+
+        // Player variables
+        int playerScore;
+
+        // Text var
+        Color textColor = new Color(245, 245, 245);
+        int scoreTextXOffset = 0;
 
         /// <summary>
         ///     Setup runs once before the game loop begins.
@@ -31,8 +32,8 @@ namespace Game10003
         public void Setup()
         {
             WindowInitialization(windowWidth, windowHeight);
-            rectangleTest.X = windowCenter[0];
-            rectangleTest.Y = windowCenter[1];
+            windowCenter = [windowWidth / 2, windowHeight / 2];
+
         }
 
         /// <summary>
@@ -41,50 +42,59 @@ namespace Game10003
         public void Update()
         {
             Window.ClearBackground(Color.DarkGray);
-            Console.WriteLine($"{rectSize}");
 
             DrawBackground();
+            HandlePlayerScore();
             HandleInput();
+
         }
 
 
         // Window Setup and Initialization
-        public void WindowInitialization(int windowWidth, int windowHeight)
+        void WindowInitialization(int windowWidth, int windowHeight)
         {
             Window.SetTitle("callaway-brandon-a2-falling-game");
             Window.SetSize(windowWidth, windowHeight);
-            Window.TargetFPS = 60;
+            Window.TargetFPS = 30;
         }
 
-        public void DrawBackground()
+        void DrawBackground()
         {
-            // Set Rectangle color and place rectangle at center of screen
-            Draw.FillColor = rectColor;
-            Draw.Square(rectangleTest.X - rectSize / 2, rectangleTest.Y - rectSize / 2, rectSize);
+            
         }
 
-        public void HandleInput()
+        void HandleInput()
         {
             if (Input.IsKeyboardKeyDown(KeyboardInput.W))
             {
-                if (rectSize > windowWidth)
-                {
-                    rectSize = 25;
-                    rectangleTest.Z += colorChangeRate;
-                    /*
-                    if (rectColor.R < 255)
-                    {
-                        
-                    }
-                    else
-                    {
-                        rectColor.R = 95;
-                    }
-                    */
-                    rectColor.R += (int)rectangleTest.Z;
-                }
+            }
+        }
 
-                rectSize += Time.DeltaTime * rectSpeed * 10;
+        // Draw score text with a black background, check score for win state
+        void HandlePlayerScore()
+        {
+            int textX = 25;
+            int textY = 350;
+            
+
+            Draw.FillColor = Color.Black;
+            Draw.Rectangle(textX - 2, textY - 2, 110 + scoreTextXOffset, 25);
+
+            Text.Size = 25;
+            Text.Color = textColor;
+            Text.Draw($"SCORE: {playerScore}", textX, textY);
+
+            if (playerScore > 9 && playerScore < 11)
+            {
+                scoreTextXOffset += 12;
+            }
+            else if (playerScore > 99 && playerScore < 101)
+            {
+                scoreTextXOffset += 14;
+            }
+            else if (playerScore > 999 && playerScore < 1001)
+            {
+                scoreTextXOffset += 15;
             }
         }
     }
