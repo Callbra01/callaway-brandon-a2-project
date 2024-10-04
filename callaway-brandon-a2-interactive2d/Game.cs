@@ -1,4 +1,5 @@
 ﻿// Include code libraries you need below (use the namespace).
+using Raylib_cs;
 using System;
 using System.Data;
 using System.Drawing;
@@ -17,17 +18,30 @@ namespace Game10003
         int windowWidth = 400;
         int windowHeight = 400;
         int[] windowCenter = [0, 0];
+        float spriteSizeScalar = 4f;
 
         // Player variables
+        int playerClassIndex = 0;
         int playerScore;
-        int playerMovementSpeed = 4;
+        int playerMovementSpeed = 2;
         int playerSize = 40;
+        int playerAreaOffset = 25;
         float[] playerPosition = [0, 0];
-        int playerAreaOffset = 45;
+        Vector4 playerCollisionBox = new Vector4(0, 0, 0, 0);
+        Color playerColor = new Color(255, 255, 0, 10);
 
+        // Background variables
+        int bgColorIndex = 0;
+        Color backgroundColor = new Color(0, 0, 0);
+        Color backgroundColor2 = new Color(255, 255, 255);
+        Color backgroundColor3;
+
+        float[] testPowerUpPos = [50, 50];
+        Vector4 powerUp1Position = new Vector4(90, 90, 0, 0);
+        Color powerUpColor = new Color(50, 50, 255);
 
         // Text var
-        Color textColor = new Color(245, 245, 245);
+        Color textColor = new Color(235, 235, 215);
         int scoreTextXOffset = 0;
 
         /// <summary>
@@ -45,37 +59,46 @@ namespace Game10003
         /// </summary>
         public void Update()
         {
-            Window.ClearBackground(Color.DarkGray);
+            
 
             DrawBackground();
             HandleInput();
-            DrawPlayer();
 
+            HandlePowerUpSprites();
+            isSpriteColliding(powerUp1Position, playerCollisionBox);
+            HandleSpriteCollision(powerUp1Position, playerCollisionBox);
+            HandlePlayerSprite(playerClassIndex);
             HandlePlayerScore();
+            Console.WriteLine($"X: {playerCollisionBox.X}, Y: {playerCollisionBox.Y}, X+S: {playerCollisionBox.Z}, Y+S: {playerCollisionBox.W}");
         }
 
         // Window Setup and Initialization
         void WindowInitialization(int windowWidth, int windowHeight)
         {
-            Window.SetTitle("callaway-brandon-a2-falling-game");
+            Window.SetTitle("callaway-brandon-a2-game");
             Window.SetSize(windowWidth, windowHeight);
             Window.TargetFPS = 60;
         }
 
         void DrawBackground()
         {
-
+            Window.ClearBackground(Color.Black);
+            // Change tunnel color when player reaches a specific score
+            if (bgColorIndex == 0)
+            {
+                backgroundColor = new Color(50, 0, 0);
+            }
+            else if (bgColorIndex == 1)
+            {
+                backgroundColor = new Color(0, 50, 0);
+            }
+            else if (bgColorIndex == 2)
+            {
+                backgroundColor = new Color(0, 0, 50);
+            }
         }
 
-        // Draw square  at player position
-        // TODO: CHANGE PLAYER SQUARE TO COMPOUND GRAPHICS
-        void DrawPlayer()
-        {
-            Draw.FillColor = new Color(255, 255, 0);
-            Draw.Square(playerPosition[0], playerPosition[1], playerSize);
-        }
-
-        // Check for player input and change player position accordingly
+        // Check for player input and change player position accordingly, and store last position
         // Only allow movement when in bounds defined by window size and custom offset
         void HandleInput()
         {
@@ -98,6 +121,96 @@ namespace Game10003
             }
         }
 
+        void HandleSpriteCollision(Vector4 spritePos, Vector4 playerPos)
+        {
+            playerCollisionBox.X = playerPosition[0];
+            playerCollisionBox.Y = playerPosition[1];
+            playerCollisionBox.Z = playerPosition[0] + playerSize;
+            playerCollisionBox.W = playerPosition[1] + playerSize;
+
+            if (playerPosition == testPowerUpPos)
+            {
+                testPowerUpPos = [800, 800];
+                powerUpColor = Color.Clear;
+            }
+        }
+
+        float[] getSpriteCenter(Vector4 spritePos, int spriteSize)
+        {
+            float[] spriteCenterPosition = [0, 0, 0, 0];
+
+            spriteCenterPosition = [spritePos.X, spritePos.Y, spritePos.X + spriteSize, spritePos.Y + spriteSize];
+
+            return spriteCenterPosition;
+        }
+
+        void isSpriteColliding(Vector4 spritePos, Vector4 playerPos)
+        {
+            // If a gives sprites coordinates intersect the players, return true
+            if (spritePos.X >= playerPos.X && spritePos.X <= playerPos.Z && spritePos.Y >= playerPos.Y && spritePos.Y <= playerPos.W)
+            {
+                Console.WriteLine("COLLISION  IS WORKING LMAO");
+            }
+        }
+
+        // Draw square  at player position
+        // TODO: CHANGE PLAYER SQUARE TO COMPOUND GRAPHICS
+        void HandlePlayerSprite(int classIndex)
+        {
+            if (playerClassIndex == 0)
+            {
+                Draw.LineColor = Color.Clear;
+                Draw.FillColor = playerColor;
+                Draw.Square(playerPosition[0], playerPosition[1], playerSize);
+
+
+                // Arms
+                Draw.FillColor = new Color(207, 185, 151);
+                Draw.Rectangle(playerPosition[0] + 4, playerPosition[1] + 12, 8, 16);
+                Draw.Rectangle(playerPosition[0] + 28, playerPosition[1] + 12, 8, 16);
+
+                // Hands
+                Draw.FillColor = new Color(207, 185, 151);
+                Draw.Square(playerPosition[0] + 4, playerPosition[1] + 28, 4);
+                Draw.Square(playerPosition[0] + 32, playerPosition[1] + 28, 4);
+
+                // Body
+                Draw.FillColor = new Color(95, 95, 95);
+                Draw.Rectangle(playerPosition[0] + 12, playerPosition[1] + 20, 16, 8);
+
+                // Head
+                Draw.FillColor = new Color(227, 205, 171);
+                Draw.Rectangle(playerPosition[0] + 8, playerPosition[1] + 4, 24, 12);
+                Draw.Rectangle(playerPosition[0] + 12, playerPosition[1] + 16, 16, 4);
+
+                // Hair
+                Draw.FillColor = new Color(144, 144, 144);
+                Draw.Rectangle(playerPosition[0] + 12, playerPosition[1], 16, 4);
+                
+
+                // Eyes
+                Draw.FillColor = Color.Black;
+                Draw.Square(playerPosition[0] + 12, playerPosition[1] + 8, 4);
+                Draw.Square(playerPosition[0] + 24, playerPosition[1] + 8, 4);
+
+                // Mouth
+                Draw.FillColor = new Color(180, 120, 120);
+                Draw.Rectangle(playerPosition[0] + 16, playerPosition[1] + 16, 8, 4);
+
+                // Legs
+                Draw.FillColor = new Color(65, 65, 65);
+                Draw.Rectangle(playerPosition[0] + 12, playerPosition[1] + 28, 8, 12);
+                Draw.Rectangle(playerPosition[0] + 20, playerPosition[1] + 28, 8, 12);
+
+            }
+        }
+
+        // Draw and manage power up sprites and position
+        void HandlePowerUpSprites()
+        {
+            Draw.FillColor = powerUpColor;
+            Draw.Square(testPowerUpPos[0], testPowerUpPos[1], 50);
+        }
         // Draw score text with a black background, check score for win state
         void HandlePlayerScore()
         {
