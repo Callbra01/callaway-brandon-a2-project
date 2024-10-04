@@ -23,12 +23,16 @@ namespace Game10003
         // Player variables
         int playerClassIndex = 0;
         int playerScore;
-        int playerMovementSpeed = 2;
+        float playerMovementSpeed = 2f;
         int playerSize = 40;
         int playerAreaOffset = 25;
         float[] playerPosition = [0, 0];
-        Vector4 playerCollisionBox = new Vector4(0, 0, 0, 0);
+
         Color playerColor = new Color(255, 255, 0, 10);
+
+        // Player Collision variables
+        Vector4 playerCollisionBox = new Vector4(0, 0, 0, 0);
+        bool isPlayerColliding = false;
 
         // Background variables
         int bgColorIndex = 0;
@@ -36,8 +40,11 @@ namespace Game10003
         Color backgroundColor2 = new Color(255, 255, 255);
         Color backgroundColor3;
 
-        Vector4 powerUp1Position = new Vector4(90, 90, 0, 0);
+        float[] powerUp1Position = [90, 90];
+        Vector4 powerUp1CollisionBox = new Vector4(90, 90, 0, 0);
         Color powerUpColor = new Color(50, 50, 255);
+        int spriteSize = 50;
+        int powerUpSize = 40;
 
         // Text var
         Color textColor = new Color(235, 235, 215);
@@ -46,7 +53,7 @@ namespace Game10003
         /// <summary>
         ///     Setup runs once before the game loop begins.
         /// </summary>
-        
+
         // Setup window, Set player to center of screen
         public void Setup()
         {
@@ -60,17 +67,14 @@ namespace Game10003
         /// </summary>
         public void Update()
         {
-            
-
             DrawBackground();
             HandleInput();
 
-            HandlePowerUpSprites();
-            isSpriteColliding(powerUp1Position, playerCollisionBox);
-            HandleSpriteCollision(powerUp1Position, playerCollisionBox);
-            HandlePlayerSprite(playerClassIndex);
+            
+            UpdateCollisionBoxes();
+            DrawPowerUpSprite();
+            DrawPlayerSprite(playerClassIndex);
             HandlePlayerScore();
-            //Console.WriteLine($"X: {playerCollisionBox.X}, Y: {playerCollisionBox.Y}, X+S: {playerCollisionBox.Z}, Y+S: {playerCollisionBox.W}");
         }
 
         // Window Setup and Initialization
@@ -83,7 +87,6 @@ namespace Game10003
 
         void DrawBackground()
         {
-            Window.ClearBackground(Color.Black);
             // Change tunnel color when player reaches a specific score
             if (bgColorIndex == 0)
             {
@@ -97,6 +100,7 @@ namespace Game10003
             {
                 backgroundColor = new Color(0, 0, 50);
             }
+            Window.ClearBackground(backgroundColor);
         }
 
         // Check for player input and change player position accordingly, and store last position
@@ -120,56 +124,72 @@ namespace Game10003
             {
                 playerPosition[0] += Time.DeltaTime * playerMovementSpeed * 100;
             }
+
         }
 
-        void HandleSpriteCollision(Vector4 spritePos, Vector4 playerPos)
+        // Check different sprite collisions
+        void UpdateCollisionBoxes()
         {
-            playerCollisionBox.X = playerPosition[0];
-            playerCollisionBox.Y = playerPosition[1];
-            playerCollisionBox.Z = playerPosition[0] + playerSize;
-            playerCollisionBox.W = playerPosition[1] + playerSize;
+            playerCollisionBox = GetSpriteVertexPositions(playerPosition, playerSize);
+            powerUp1CollisionBox = GetSpriteVertexPositions(powerUp1Position, powerUpSize);
 
-            /* TODO: FIX THIS LATER
-            if (playerPosition == powerUp1Position)
+            // First power up collision check
+            if(isSpriteColliding(powerUp1CollisionBox, spriteSize, playerCollisionBox))
             {
-                testPowerUpPos = [800, 800];
-                powerUpColor = Color.Clear;
+                //TODO: Stop drawing sprite, increase player health and speed
             }
-            */
         }
 
-        float[] getSpriteCenter(Vector4 spritePos, int spriteSize)
+        // Returns the 4 points of a sprite rectangle, given the position array and a size scalar
+        Vector4 GetSpriteVertexPositions(float[] spritePos, int spriteSize)
         {
-            float[] spriteCenterPosition = [0, 0, 0, 0];
+            Vector4 spriteVertexPositions;
 
-            spriteCenterPosition = [spritePos.X, spritePos.Y, spritePos.X + spriteSize, spritePos.Y + spriteSize];
-
-            return spriteCenterPosition;
+            spriteVertexPositions.X = spritePos[0];
+            spriteVertexPositions.Y = spritePos[1];
+            spriteVertexPositions.Z = spritePos[0] + spriteSize;
+            spriteVertexPositions.W = spritePos[1] + spriteSize;
+            return spriteVertexPositions;
         }
 
-        void isSpriteColliding(Vector4 spritePos, Vector4 playerPos)
+        // Returns true if a given sprites vertex positions intersects the players vertex positions
+        bool isSpriteColliding(Vector4 spritePos, int spriteSize, Vector4 playerPos)
         {
-
-            
+            isPlayerColliding = false;
             if (spritePos.X >= playerPos.X && spritePos.X <= playerPos.Z && spritePos.Y >= playerPos.Y && spritePos.Y <= playerPos.W)
             {
-                // Console.WriteLine("COLLISION  IS WORKING LMAO")
-                Console.WriteLine($"SPRITE_X: {spritePos.X}, Y: {spritePos.Y}");
+                isPlayerColliding = true;
+                return true;
             }
-            Draw.Circle(spritePos.X, spritePos.Y, 15);
-            
+            else if (spritePos.X >= playerPos.X && spritePos.X <= playerPos.Z && spritePos.W >= playerPos.Y && spritePos.W <= playerPos.W)
+            {
+                isPlayerColliding = true;
+                return true;
+            }
+            else if (spritePos.Z >= playerPos.X && spritePos.Z <= playerPos.Z && spritePos.Y >= playerPos.Y && spritePos.Y <= playerPos.W)
+            {
+                isPlayerColliding = true;
+                return true;
+            }
+            else if (spritePos.Z >= playerPos.X && spritePos.Z <= playerPos.Z && spritePos.W >= playerPos.Y && spritePos.W <= playerPos.W)
+            {
+                isPlayerColliding = true;
+                return true;
+            }
+            else
+            {
+                return false;
+            }
         }
 
         // Draw square  at player position
-        // TODO: CHANGE PLAYER SQUARE TO COMPOUND GRAPHICS
-        void HandlePlayerSprite(int classIndex)
+        void DrawPlayerSprite(int classIndex)
         {
             if (playerClassIndex == 0)
             {
                 Draw.LineColor = Color.Clear;
                 Draw.FillColor = playerColor;
                 Draw.Square(playerPosition[0], playerPosition[1], playerSize);
-
 
                 // Arms
                 Draw.FillColor = new Color(207, 185, 151);
@@ -193,7 +213,6 @@ namespace Game10003
                 // Hair
                 Draw.FillColor = new Color(144, 144, 144);
                 Draw.Rectangle(playerPosition[0] + 12, playerPosition[1], 16, 4);
-                
 
                 // Eyes
                 Draw.FillColor = Color.Black;
@@ -218,10 +237,10 @@ namespace Game10003
         }
 
         // Draw and manage power up sprites and position
-        void HandlePowerUpSprites()
+        void DrawPowerUpSprite()
         {
             Draw.FillColor = powerUpColor;
-            Draw.Square(powerUp1Position.X, powerUp1Position.Y, 50);
+            Draw.Square(powerUp1Position[0], powerUp1Position[1], powerUpSize);
         }
         // Draw score text with a black background, check score for win state
         void HandlePlayerScore()
