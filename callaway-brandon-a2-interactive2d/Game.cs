@@ -36,7 +36,6 @@ namespace Game10003
         Color backgroundColor2 = new Color(255, 255, 255);
         Color backgroundColor3;
 
-        float[] testPowerUpPos = [50, 50];
         Vector4 powerUp1Position = new Vector4(90, 90, 0, 0);
         Color powerUpColor = new Color(50, 50, 255);
 
@@ -47,6 +46,8 @@ namespace Game10003
         /// <summary>
         ///     Setup runs once before the game loop begins.
         /// </summary>
+        
+        // Setup window, Set player to center of screen
         public void Setup()
         {
             WindowInitialization(windowWidth, windowHeight);
@@ -69,7 +70,7 @@ namespace Game10003
             HandleSpriteCollision(powerUp1Position, playerCollisionBox);
             HandlePlayerSprite(playerClassIndex);
             HandlePlayerScore();
-            Console.WriteLine($"X: {playerCollisionBox.X}, Y: {playerCollisionBox.Y}, X+S: {playerCollisionBox.Z}, Y+S: {playerCollisionBox.W}");
+            //Console.WriteLine($"X: {playerCollisionBox.X}, Y: {playerCollisionBox.Y}, X+S: {playerCollisionBox.Z}, Y+S: {playerCollisionBox.W}");
         }
 
         // Window Setup and Initialization
@@ -128,11 +129,13 @@ namespace Game10003
             playerCollisionBox.Z = playerPosition[0] + playerSize;
             playerCollisionBox.W = playerPosition[1] + playerSize;
 
-            if (playerPosition == testPowerUpPos)
+            /* TODO: FIX THIS LATER
+            if (playerPosition == powerUp1Position)
             {
                 testPowerUpPos = [800, 800];
                 powerUpColor = Color.Clear;
             }
+            */
         }
 
         float[] getSpriteCenter(Vector4 spritePos, int spriteSize)
@@ -146,11 +149,15 @@ namespace Game10003
 
         void isSpriteColliding(Vector4 spritePos, Vector4 playerPos)
         {
-            // If a gives sprites coordinates intersect the players, return true
+
+            
             if (spritePos.X >= playerPos.X && spritePos.X <= playerPos.Z && spritePos.Y >= playerPos.Y && spritePos.Y <= playerPos.W)
             {
-                Console.WriteLine("COLLISION  IS WORKING LMAO");
+                // Console.WriteLine("COLLISION  IS WORKING LMAO")
+                Console.WriteLine($"SPRITE_X: {spritePos.X}, Y: {spritePos.Y}");
             }
+            Draw.Circle(spritePos.X, spritePos.Y, 15);
+            
         }
 
         // Draw square  at player position
@@ -202,6 +209,11 @@ namespace Game10003
                 Draw.Rectangle(playerPosition[0] + 12, playerPosition[1] + 28, 8, 12);
                 Draw.Rectangle(playerPosition[0] + 20, playerPosition[1] + 28, 8, 12);
 
+                Draw.FillColor = Color.White;
+                Draw.Circle(playerCollisionBox.X, playerCollisionBox.Y, 5);
+                Draw.Circle(playerCollisionBox.X, playerCollisionBox.W, 5);
+                Draw.Circle(playerCollisionBox.Z, playerCollisionBox.Y, 5);
+                Draw.Circle(playerCollisionBox.Z, playerCollisionBox.W, 5);
             }
         }
 
@@ -209,7 +221,7 @@ namespace Game10003
         void HandlePowerUpSprites()
         {
             Draw.FillColor = powerUpColor;
-            Draw.Square(testPowerUpPos[0], testPowerUpPos[1], 50);
+            Draw.Square(powerUp1Position.X, powerUp1Position.Y, 50);
         }
         // Draw score text with a black background, check score for win state
         void HandlePlayerScore()
