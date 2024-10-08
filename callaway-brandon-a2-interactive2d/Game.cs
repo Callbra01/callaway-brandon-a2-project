@@ -67,6 +67,9 @@ namespace Game10003
         // Text variables
         Color textColor = new Color(235, 235, 215);
 
+        // Audio variables
+        Music gameIntro;
+
         /// <summary>
         ///     Setup runs once before the game loop begins.
         /// </summary>
@@ -75,6 +78,7 @@ namespace Game10003
         public void Setup()
         {
             WindowInitialization(windowWidth, windowHeight);
+            AudioInitialization();
             windowCenter = [windowWidth / 2, windowHeight / 2];
             playerPosition = [windowWidth / 2 - playerSize / 2, windowHeight / 2 - playerSize / 2];
         }
@@ -99,6 +103,14 @@ namespace Game10003
             Window.SetTitle("callaway-brandon-a2-game");
             Window.SetSize(windowWidth, windowHeight);
             Window.TargetFPS = 60;
+        }
+
+        // Load audio variables
+        void AudioInitialization()
+        {
+            gameIntro = Audio.LoadMusic("../../../assets/GAMEINTRO.WAV");
+            Audio.SetVolume(gameIntro, 0.1f);
+            Audio.Play(gameIntro);
         }
 
         void DrawBackground()
@@ -266,7 +278,6 @@ namespace Game10003
                 {
                     weaponPosition = [playerPosition[0] + 8 * 4, playerPosition[1] + 3 * 4];
                 }
-
             }
             else
             {
@@ -297,7 +308,6 @@ namespace Game10003
         Vector4 GetSpriteVertexPositions(float[] spritePos, int spriteSize)
         {
             Vector4 spriteVertexPositions;
-
             spriteVertexPositions.X = spritePos[0];
             spriteVertexPositions.Y = spritePos[1];
             spriteVertexPositions.Z = spritePos[0] + spriteSize;
@@ -445,6 +455,7 @@ namespace Game10003
                 Draw.FillColor = new Color(129, 79, 72);
                 Draw.Rectangle(weaponPosition[0] + 12, weaponPosition[1] - 32, 8, 12);
             }
+
             // Draw non-specific class shapes
             // Head
             Draw.FillColor = new Color(227, 205, 171);
