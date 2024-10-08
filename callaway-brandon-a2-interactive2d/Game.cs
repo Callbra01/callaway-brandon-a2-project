@@ -14,7 +14,7 @@ namespace Game10003
     /// </summary>
     public class Game
     {
-        // Place your variables here:
+        // Window variables
         int windowWidth = 400;
         int windowHeight = 400;
         int[] windowCenter = [0, 0];
@@ -33,26 +33,21 @@ namespace Game10003
         float[] weaponPosition = [0, 0];
         bool playerAttacking = false;
 
-        // Enemy Variables
+        // Enemy variables
         int spriteSize = 50;
         int enemySize = 40;
         float[] enemyPosition = [90, -90];
-        Vector4 enemyCollisionBox = new Vector4(90, 90, 0, 0);
-        Color enemyColor = new Color(50, 50, 255);
         bool canEnemiesMove = false;
+        Vector4 enemyCollisionBox = new Vector4(90, 90, 0, 0);
 
         // Player Collision variables
-        Vector4 playerCollisionBox = new Vector4(0, 0, 0, 0);
-        Vector4 playerWeaponCollisionBox = new Vector4(0, 0, 0, 0);
         bool isPlayerColliding = false;
         bool isWeaponColliding = false;
+        Vector4 playerCollisionBox = new Vector4(0, 0, 0, 0);
+        Vector4 playerWeaponCollisionBox = new Vector4(0, 0, 0, 0);
 
         // Background variables
         int bgColorIndex = 0;
-        Color backgroundColor = new Color(0, 0, 0);
-        Color backgroundColor2 = new Color(255, 255, 255);
-        Color backgroundColor3;
-        Color wallColor = new Color(120, 120, 180);
         Vector4 warriorSelectionBox = new Vector4(100, 125, 200, 50);
         Vector4 wizardSelectionBox = new Vector4(100, 225, 200, 50);
         Vector4 wretchSelectionBox = new Vector4(100, 325, 200, 50);
@@ -60,11 +55,16 @@ namespace Game10003
         Vector4 mousePosition = new Vector4();
 
         // Color variables
+        Color backgroundColor = new Color(0, 0, 0);
+        Color wallColor = new Color(120, 120, 180);
+        Color floorColor = new Color(20, 20, 60);
+        Color enemyColor = new Color(85, 85, 100);
         Color playerSkinColor = new Color(207, 185, 151);
+        Color wizardStarColor = new Color(255, 215, 0);
+        Color winOverlayColor = new Color(235, 235, 235, 0);
+        Color winTextColor = new Color(20, 20, 20, 0);
 
-
-
-        // Text var
+        // Text variables
         Color textColor = new Color(235, 235, 215);
 
         /// <summary>
@@ -86,10 +86,9 @@ namespace Game10003
         {
             DrawBackground();
             HandleInput();
-            UpdateCollisionBoxes();
-            HandlePlayerHP();
             HandleEnemy();
             DrawPlayerSprite(playerClassIndex);
+            UpdateCollisionBoxes();
             HandlePlayerScore();
             HandleGameScenes();
         }
@@ -105,6 +104,9 @@ namespace Game10003
         void DrawBackground()
         {
             Window.ClearBackground(backgroundColor);
+
+            Draw.FillColor = floorColor;
+            Draw.Square(0, 0, windowWidth);
 
             Draw.FillColor = wallColor;
             Draw.Rectangle(0, 0, 40, windowHeight);
@@ -137,7 +139,7 @@ namespace Game10003
                 Draw.Rectangle(0, 0, windowWidth, 50);
                 Text.Color = Color.Black;
                 Text.Size = 35;
-                Text.Draw("Dungeon of Cupidity", 25, 0);
+                Text.Draw("Dungeon of Cupidity", 25, 10);
 
                 // For every selection box, create a W and Z value based off size
                 for (int i = 0; i < 3; i++)
@@ -164,22 +166,39 @@ namespace Game10003
                     }
                 }
             }
+            // Game scene
             else if (gameSceneCount == 1)
             {
-                Draw.FillColor = Color.OffWhite;
-
+                if (playerScore == 1000)
+                {
+                    gameSceneCount = 3;
+                }
             }
+            // Death overlay
             else if (gameSceneCount == 2)
             {
-                Color redBackground = new Color(255, 0, 0, 255);
                 playerHP = 1;
-
                 Draw.Square(0, 0, windowWidth);
                 Draw.FillColor = Color.Black;
                 Draw.Square(25, 25, windowWidth - 50);
 
                 Text.Color = Color.Red;
                 Text.Draw("~~~YOU HAVE DIED~~~\n\n\n~~~~~PRESS ESC~~~~~", windowWidth / 2 - 125, windowHeight / 2 - 50);
+            }
+            else if (gameSceneCount == 3)
+            {
+                canEnemiesMove = false;
+                Draw.FillColor = winOverlayColor;
+                Draw.Square(0, 0, windowHeight);
+                if (winOverlayColor.A < 255)
+                {
+                    winOverlayColor.A += 2;
+                    winTextColor.A += 2;
+                }
+
+                Text.Color = Color.Black;
+                Text.Size = 22;
+                Text.Draw("~~YOU HAVE EARNED YOUR ESCAPE~~\n\n\n\n\n~~YOUR JOURNEY HAS NOT ENDED~~", windowWidth / 2 - 185, windowHeight / 2 - 75);
             }
         }
 
@@ -216,15 +235,10 @@ namespace Game10003
             {
                 playerAttacking = false;
             }
-
-            if (Input.IsKeyboardKeyPressed(KeyboardInput.Left))
-            {
-                canEnemiesMove = !canEnemiesMove;
-            }
         }
 
         // Linearly interpolate a sprite's vector to a given vector's position
-        // Vector4.Lerp only accepts a minimum step value of 0.1f;
+        // Vector4.Lerp only accepts a minimum step value of 0.1f, which is makes the enemy too fast
         Vector4 InterpolateSpritePositions(Vector4 startVector, Vector4 endVector, float steps)
         {
             return (startVector + (endVector - startVector) * steps);
@@ -272,7 +286,6 @@ namespace Game10003
             {
                 canEnemiesMove = true;
             }
-
             // First power up collision check
             if (isSpriteColliding(enemyCollisionBox, playerCollisionBox))
             {
@@ -323,9 +336,14 @@ namespace Game10003
         }
 
         // Draw square  at player position
-        // TODO: DRAW WIZARD AND WARRIOR SPECIFIC SPRITES
         void DrawPlayerSprite(int classIndex)
         {
+            // PlayerHP check
+            if (playerHP <= 0)
+            {
+                gameSceneCount = 2;
+            }
+
             Draw.LineColor = Color.Clear;
             // If player selected Warrior, draw warrior and their respective weapon
             if (playerClassIndex == 0)
@@ -372,15 +390,33 @@ namespace Game10003
                 Draw.Square(playerPosition[0] + 32, playerPosition[1] + 28, 4);
 
                 // Body
+                Draw.FillColor = new Color(50, 50, 80);
+                Draw.Rectangle(playerPosition[0] + 12, playerPosition[1] + 20, 16, 4);
+                Draw.Rectangle(playerPosition[0] + 12, playerPosition[1] + 24, 16, 4);
+                Draw.Rectangle(playerPosition[0] + 8, playerPosition[1] + 28, 24, 4);
+                Draw.Rectangle(playerPosition[0] + 4, playerPosition[1] + 32, 32, 4);
+                Draw.Rectangle(playerPosition[0] + 4, playerPosition[1] + 36, 32, 4);
 
-                // Legs
+                // Robe
+                Draw.FillColor = wizardStarColor;
+                Draw.Square(playerPosition[0] + 4, playerPosition[1] + 36, 4);
+                Draw.Square(playerPosition[0] + 12, playerPosition[1] + 36, 4);
+                Draw.Square(playerPosition[0] + 24, playerPosition[1] + 36, 4);
+                Draw.Square(playerPosition[0] + 32, playerPosition[1] + 36, 4);
 
                 // Wizard Weapon
+                Draw.FillColor = new Color(109, 95, 70);
+                Draw.Rectangle(weaponPosition[0] + 4, weaponPosition[1] - 4, 4, 16);
+                Draw.Rectangle(weaponPosition[0] + 4, weaponPosition[1] - 32, 4, 16);
+                Draw.Rectangle(weaponPosition[0] + 16, weaponPosition[1] - 32, 4, 16);
+                Draw.Rectangle(weaponPosition[0] - 8, weaponPosition[1] - 32, 4, 16);
+                Draw.Rectangle(weaponPosition[0] - 8, weaponPosition[1] - 16, 28, 4);
+                Draw.FillColor = wizardStarColor;
+                Draw.Rectangle(weaponPosition[0], weaponPosition[1] - 40, 12, 12);
             }
             // If player selected Wretch, draw wretch and their respective weapon
             else if (playerClassIndex == 2)
             {
-
                 // Arms
                 Draw.FillColor = playerSkinColor;
                 Draw.Rectangle(playerPosition[0] + 4, playerPosition[1] + 12, 8, 16);
@@ -409,7 +445,6 @@ namespace Game10003
                 Draw.FillColor = new Color(129, 79, 72);
                 Draw.Rectangle(weaponPosition[0] + 12, weaponPosition[1] - 32, 8, 12);
             }
-
             // Draw non-specific class shapes
             // Head
             Draw.FillColor = new Color(227, 205, 171);
@@ -430,27 +465,34 @@ namespace Game10003
             Draw.Rectangle(playerPosition[0] + 16, playerPosition[1] + 16, 8, 4);
         }
 
-        void HandlePlayerHP()
-        {
-            if (playerHP <= 0)
-            {
-                gameSceneCount = 2;
-            }
-        }
-
         void DrawEnemy()
         {
             enemyCollisionBox = InterpolateSpritePositions(enemyCollisionBox, playerCollisionBox, 0.023f);
             enemyPosition[0] = enemyCollisionBox.X;
             enemyPosition[1] = enemyCollisionBox.Y;
+
             Draw.FillColor = enemyColor;
-            Draw.Square(enemyCollisionBox.X, enemyCollisionBox.Y, enemySize);
-        }
+            Draw.Rectangle(enemyPosition[0] + 4, enemyPosition[1], 8, 4);
+            Draw.Rectangle(enemyPosition[0] + 28, enemyPosition[1], 8, 4);
+            Draw.Rectangle(enemyPosition[0] + 8, enemyPosition[1] + 4, 24, 28);
+            Draw.Rectangle(enemyPosition[0] + 4, enemyPosition[1] + 8, 32, 12);
+            Draw.Rectangle(enemyPosition[0] + 4, enemyPosition[1] + 24, 32, 8);
+            Draw.Rectangle(enemyPosition[0] + 4, enemyPosition[1] + 32, 12, 4);
+            Draw.Rectangle(enemyPosition[0] + 24, enemyPosition[1] + 32, 12, 4);
+            Draw.Square(enemyPosition[0] + 4, enemyPosition[1] + 36, 4);
+            Draw.Square(enemyPosition[0] + 12, enemyPosition[1] + 36, 4);
+            Draw.Square(enemyPosition[0] + 24, enemyPosition[1] + 36, 4);
+            Draw.Square(enemyPosition[0] + 32, enemyPosition[1] + 36, 4);
 
-        // TODO: DRAW BOSS SPRITE
-        void DrawBoss()
-        {
+            Draw.FillColor = Color.Red;
+            Draw.Square(enemyPosition[0] + 12, enemyPosition[1] + 8, 4);
+            Draw.Square(enemyPosition[0] + 24, enemyPosition[1] + 8, 4);
+            Draw.Square(enemyPosition[0] + 28, enemyPosition[1] + 12, 4);
+            Draw.Square(enemyPosition[0] + 8, enemyPosition[1] + 12, 4);
 
+            Draw.FillColor = Color.OffWhite;
+            Draw.Rectangle(enemyPosition[0] + 12, enemyPosition[1] + 20, 4, 8);
+            Draw.Rectangle(enemyPosition[0] + 24, enemyPosition[1] + 20, 4, 8);
         }
 
         // If out of main menu, allow enemy movement via linear interpolation of vector4 positions
