@@ -18,7 +18,6 @@ namespace Game10003
         int windowWidth = 400;
         int windowHeight = 400;
         int[] windowCenter = [0, 0];
-        float spriteSizeScalar = 4f;
 
         // Scene 0: Main Menu, 1: Game, 2: Death, 3: Win
         int gameSceneCount = 0;
@@ -27,16 +26,26 @@ namespace Game10003
         int playerClassIndex = 0;
         int playerScore;
         int playerHP = 100;
-        float playerMovementSpeed = 2f;
         int playerSize = 40;
         int playerAreaOffset = 25;
+        float playerMovementSpeed = 2f;
         float[] playerPosition = [0, 0];
         float[] weaponPosition = [0, 0];
         bool playerAttacking = false;
 
+        // Enemy Variables
+        int spriteSize = 50;
+        int enemySize = 40;
+        float[] enemyPosition = [90, -90];
+        Vector4 enemyCollisionBox = new Vector4(90, 90, 0, 0);
+        Color enemyColor = new Color(50, 50, 255);
+        bool canEnemiesMove = false;
+
         // Player Collision variables
         Vector4 playerCollisionBox = new Vector4(0, 0, 0, 0);
+        Vector4 playerWeaponCollisionBox = new Vector4(0, 0, 0, 0);
         bool isPlayerColliding = false;
+        bool isWeaponColliding = false;
 
         // Background variables
         int bgColorIndex = 0;
@@ -50,17 +59,13 @@ namespace Game10003
         Vector4[] classSelectionBoxes = [];
         Vector4 mousePosition = new Vector4();
 
-        // Enemy Variables
-        float[] enemy1Position = [90, -90];
-        Vector4 enemy1CollisionBox = new Vector4(90, 90, 0, 0);
-        Color enemy1Color = new Color(50, 50, 255);
-        int spriteSize = 50;
-        int enemy1Size = 40;
-        bool canEnemiesMove = false;
+        // Color variables
+        Color playerSkinColor = new Color(207, 185, 151);
+
+
 
         // Text var
         Color textColor = new Color(235, 235, 215);
-        int scoreTextXOffset = 0;
 
         /// <summary>
         ///     Setup runs once before the game loop begins.
@@ -72,7 +77,6 @@ namespace Game10003
             WindowInitialization(windowWidth, windowHeight);
             windowCenter = [windowWidth / 2, windowHeight / 2];
             playerPosition = [windowWidth / 2 - playerSize / 2, windowHeight / 2 - playerSize / 2];
-            
         }
 
         /// <summary>
@@ -84,14 +88,34 @@ namespace Game10003
             HandleInput();
             UpdateCollisionBoxes();
             HandlePlayerHP();
-            HandleEnemy1();
+            HandleEnemy();
             DrawPlayerSprite(playerClassIndex);
             HandlePlayerScore();
             HandleGameScenes();
         }
 
+        // Window Setup and Initialization
+        void WindowInitialization(int windowWidth, int windowHeight)
+        {
+            Window.SetTitle("callaway-brandon-a2-game");
+            Window.SetSize(windowWidth, windowHeight);
+            Window.TargetFPS = 60;
+        }
+
+        void DrawBackground()
+        {
+            Window.ClearBackground(backgroundColor);
+
+            Draw.FillColor = wallColor;
+            Draw.Rectangle(0, 0, 40, windowHeight);
+            Draw.Rectangle(windowWidth - 40, 0, 40, windowHeight);
+            Draw.Rectangle(0, windowHeight - 30, windowWidth, 30);
+        }
+
+        // Overlay specific screen based on the current scene count
         void HandleGameScenes()
         {
+            // Main Menu scene, pause enemy movement, draw selection boxes
             if (gameSceneCount == 0)
             {
                 // Get selection box vertex positions
@@ -103,7 +127,7 @@ namespace Game10003
                 mousePosition.Z = 20;
                 mousePosition.W = 20;
 
-                // Prevent enemies from moving, draw black overlay over screen
+                // Prevent enemies from moving, draw black overlay for main menu
                 canEnemiesMove = false;
                 Draw.FillColor = Color.Black;
                 Draw.Square(0, 0, windowWidth);
@@ -114,7 +138,6 @@ namespace Game10003
                 Text.Color = Color.Black;
                 Text.Size = 35;
                 Text.Draw("Dungeon of Cupidity", 25, 0);
-
 
                 // For every selection box, create a W and Z value based off size
                 for (int i = 0; i < 3; i++)
@@ -143,54 +166,22 @@ namespace Game10003
             }
             else if (gameSceneCount == 1)
             {
+                Draw.FillColor = Color.OffWhite;
 
             }
             else if (gameSceneCount == 2)
             {
                 Color redBackground = new Color(255, 0, 0, 255);
                 playerHP = 1;
-                
+
                 Draw.Square(0, 0, windowWidth);
                 Draw.FillColor = Color.Black;
                 Draw.Square(25, 25, windowWidth - 50);
 
                 Text.Color = Color.Red;
-                Text.Draw("~~~YOU HAVE DIED~~~\n\n\n~~~~~PRESS ESC~~~~~", windowWidth / 2 - 125, windowHeight / 2);
+                Text.Draw("~~~YOU HAVE DIED~~~\n\n\n~~~~~PRESS ESC~~~~~", windowWidth / 2 - 125, windowHeight / 2 - 50);
             }
         }
-
-        // Window Setup and Initialization
-        void WindowInitialization(int windowWidth, int windowHeight)
-        {
-            Window.SetTitle("callaway-brandon-a2-game");
-            Window.SetSize(windowWidth, windowHeight);
-            Window.TargetFPS = 60;
-        }
-
-        void DrawBackground()
-        {
-            // Change room color when player reaches a specific score
-            if (bgColorIndex == 0)
-            {
-                backgroundColor = new Color(50, 50, 50);
-            }
-            else if (bgColorIndex == 1)
-            {
-                backgroundColor = new Color(0, 50, 0);
-            }
-            else if (bgColorIndex == 2)
-            {
-                backgroundColor = new Color(0, 0, 50);
-            }
-
-            Draw.FillColor = wallColor;
-            Draw.Rectangle(0, 0, 40, windowHeight);
-            Draw.Rectangle(windowWidth - 40, 0, 40, windowHeight);
-            Draw.Rectangle(0, windowHeight - 30, windowWidth, 30);
-
-            Window.ClearBackground(backgroundColor);
-        }
-
 
         // Check for player input and change player position accordingly, and store last position
         // Only allow movement when in bounds defined by window size and custom offset
@@ -217,13 +208,23 @@ namespace Game10003
             }
 
             // Player attack check
-            if (Input.IsKeyboardKeyPressed(KeyboardInput.Space))
+            if (Input.IsKeyboardKeyDown(KeyboardInput.Space))
             {
                 playerAttacking = true;
             }
+            else
+            {
+                playerAttacking = false;
+            }
 
+            if (Input.IsKeyboardKeyPressed(KeyboardInput.Left))
+            {
+                canEnemiesMove = !canEnemiesMove;
+            }
         }
 
+        // Linearly interpolate a sprite's vector to a given vector's position
+        // Vector4.Lerp only accepts a minimum step value of 0.1f;
         Vector4 InterpolateSpritePositions(Vector4 startVector, Vector4 endVector, float steps)
         {
             return (startVector + (endVector - startVector) * steps);
@@ -232,12 +233,48 @@ namespace Game10003
         // Check different sprite collisions
         void UpdateCollisionBoxes()
         {
+            // Initialize and update collision boxes 
             playerCollisionBox = GetSpriteVertexPositions(playerPosition, playerSize);
-            enemy1CollisionBox = GetSpriteVertexPositions(enemy1Position, enemy1Size);
-            weaponPosition = [playerPosition[0] + 8 * spriteSizeScalar, playerPosition[1] + 7 * spriteSizeScalar];
+            enemyCollisionBox = GetSpriteVertexPositions(enemyPosition, enemySize);
+            // Weapon position array is used for positioning weapon sprite
+            if (playerAttacking)
+            {
+                // Change weapon attack animation depending on class index
+                if (playerClassIndex == 0)
+                {
+                    weaponPosition = [playerPosition[0] + 8 * 4, playerPosition[1]];
+                }
+                else if (playerClassIndex == 1)
+                {
+                    weaponPosition = [playerPosition[0] + 8 * 4, playerPosition[1] + 3 * 4];
+                }
+                else if (playerClassIndex == 2)
+                {
+                    weaponPosition = [playerPosition[0] + 8 * 4, playerPosition[1] + 3 * 4];
+                }
+
+            }
+            else
+            {
+                weaponPosition = [playerPosition[0] + 8 * 4, playerPosition[1] + 7 * 4];
+            }
+
+            // Weapon collision box is for the actual damage check
+            playerWeaponCollisionBox = GetSpriteVertexPositions([playerPosition[0] + 4, playerPosition[1] - playerSize + 5], playerSize - 8);
+            Draw.FillColor = Color.White;
+
+            if (isSpriteColliding(enemyCollisionBox, playerWeaponCollisionBox) && playerAttacking)
+            {
+                canEnemiesMove = false;
+                playerScore += 100;
+            }
+            else if (gameSceneCount == 1)
+            {
+                canEnemiesMove = true;
+            }
 
             // First power up collision check
-            if (isSpriteColliding(enemy1CollisionBox, playerCollisionBox))
+            if (isSpriteColliding(enemyCollisionBox, playerCollisionBox))
             {
                 playerHP -= 1;
             }
@@ -286,30 +323,71 @@ namespace Game10003
         }
 
         // Draw square  at player position
+        // TODO: DRAW WIZARD AND WARRIOR SPECIFIC SPRITES
         void DrawPlayerSprite(int classIndex)
         {
+            Draw.LineColor = Color.Clear;
             // If player selected Warrior, draw warrior and their respective weapon
             if (playerClassIndex == 0)
             {
+                // Arms
+                Draw.FillColor = playerSkinColor;
+                Draw.Rectangle(playerPosition[0], playerPosition[1] + 16, 8, 16);
+                Draw.Rectangle(playerPosition[0] + 4, playerPosition[1] + 12, 8, 12);
+                Draw.Rectangle(playerPosition[0] + 32, playerPosition[1] + 16, 8, 16);
+                Draw.Rectangle(playerPosition[0] + 28, playerPosition[1] + 12, 8, 12);
 
+                // Body
+                Draw.FillColor = new Color(95, 95, 95);
+                Draw.Rectangle(playerPosition[0] + 12, playerPosition[1] + 20, 16, 8);
+
+                // Legs
+                Draw.FillColor = new Color(65, 65, 65);
+                Draw.Rectangle(playerPosition[0] + 12, playerPosition[1] + 28, 8, 12);
+                Draw.Rectangle(playerPosition[0] + 20, playerPosition[1] + 28, 8, 12);
+                Draw.Rectangle(playerPosition[0] + 8, playerPosition[1] + 36, 4, 4);
+                Draw.Rectangle(playerPosition[0] + 28, playerPosition[1] + 36, 4, 4);
+
+                // Warrior Weapon
+                Draw.FillColor = new Color(109, 59, 52);
+                Draw.Rectangle(weaponPosition[0] + 4, weaponPosition[1], 4, 12);
+                Draw.FillColor = new Color(144, 144, 144);
+                Draw.Rectangle(weaponPosition[0] - 4, weaponPosition[1] - 4, 20, 4);
+                Draw.Rectangle(weaponPosition[0] + 4, weaponPosition[1] - 32, 4, 28);
+
+                Draw.FillColor = new Color(210, 210, 210);
+                Draw.Rectangle(weaponPosition[0] + 8, weaponPosition[1] - 28, 4, 20);
             }
             // If player selected Wizard, draw wizard and their respective weapon
             else if (playerClassIndex == 1)
             {
-
-            }
-            // If player selected Wretch, draw wretch and their respective weapon
-            else if (playerClassIndex == 2)
-            {
-                Draw.LineColor = Color.Clear;
-
                 // Arms
-                Draw.FillColor = new Color(207, 185, 151);
+                Draw.FillColor = playerSkinColor;
                 Draw.Rectangle(playerPosition[0] + 4, playerPosition[1] + 12, 8, 16);
                 Draw.Rectangle(playerPosition[0] + 28, playerPosition[1] + 12, 8, 16);
 
                 // Hands
-                Draw.FillColor = new Color(207, 185, 151);
+                Draw.FillColor = playerSkinColor;
+                Draw.Square(playerPosition[0] + 4, playerPosition[1] + 28, 4);
+                Draw.Square(playerPosition[0] + 32, playerPosition[1] + 28, 4);
+
+                // Body
+
+                // Legs
+
+                // Wizard Weapon
+            }
+            // If player selected Wretch, draw wretch and their respective weapon
+            else if (playerClassIndex == 2)
+            {
+
+                // Arms
+                Draw.FillColor = playerSkinColor;
+                Draw.Rectangle(playerPosition[0] + 4, playerPosition[1] + 12, 8, 16);
+                Draw.Rectangle(playerPosition[0] + 28, playerPosition[1] + 12, 8, 16);
+
+                // Hands
+                Draw.FillColor = playerSkinColor;
                 Draw.Square(playerPosition[0] + 4, playerPosition[1] + 28, 4);
                 Draw.Square(playerPosition[0] + 32, playerPosition[1] + 28, 4);
 
@@ -360,53 +438,64 @@ namespace Game10003
             }
         }
 
-        // Draw and manage power up sprites and position
-        void HandleEnemy1()
+        void DrawEnemy()
         {
-            if (canEnemiesMove)
-            {
-                enemy1CollisionBox = InterpolateSpritePositions(enemy1CollisionBox, playerCollisionBox, 0.023f);
+            enemyCollisionBox = InterpolateSpritePositions(enemyCollisionBox, playerCollisionBox, 0.023f);
+            enemyPosition[0] = enemyCollisionBox.X;
+            enemyPosition[1] = enemyCollisionBox.Y;
+            Draw.FillColor = enemyColor;
+            Draw.Square(enemyCollisionBox.X, enemyCollisionBox.Y, enemySize);
+        }
 
-                enemy1Position[0] = enemy1CollisionBox.X;
-                enemy1Position[1] = enemy1CollisionBox.Y;
-            }
-            Draw.FillColor = enemy1Color;
-            Draw.Square(enemy1CollisionBox.X, enemy1CollisionBox.Y, enemy1Size);
-
-            Draw.FillColor = Color.White;
-
+        // TODO: DRAW BOSS SPRITE
+        void DrawBoss()
+        {
 
         }
+
+        // If out of main menu, allow enemy movement via linear interpolation of vector4 positions
+        void HandleEnemy()
+        {
+            if (canEnemiesMove && playerScore < 1000)
+            {
+                DrawEnemy();
+            }
+            else
+            {
+                enemyPosition = [Random.Integer(10, 350), -90];
+            }
+        }
+
         // Draw score text with a black background, check score for win state
         void HandlePlayerScore()
         {
-            int textX = 15;
-            int textY = 375;
-
+            // Score box and text
             Draw.FillColor = Color.Black;
-            Draw.Rectangle(textX - 2, textY - 2, 110 + scoreTextXOffset, 25);
+            Draw.Rectangle(13, 373, 110 + 50, 25);
 
             Text.Size = 25;
-            Text.Color = textColor;
-            Text.Draw($"SCORE: {playerScore}", textX, textY);
 
-            if (playerScore > 9 && playerScore < 11)
+            if (playerScore >= 1000)
             {
-                scoreTextXOffset += 12;
+                Text.Color = new Color(255, 255, 0);
             }
-            else if (playerScore > 99 && playerScore < 101)
+            else
             {
-                scoreTextXOffset += 14;
+                Text.Color = textColor;
             }
-            else if (playerScore > 999 && playerScore < 1001)
-            {
-                scoreTextXOffset += 15;
-            }
+            Text.Draw($"SCORE: {playerScore}", 15, 375);
 
-            // Draw player HP box and text
-            Draw.Rectangle(windowWidth - 117, textY - 2, 100, 25);
-            Text.Draw($"HP: {playerHP}", windowWidth - 115, textY);
-
+            // Player HP box and text
+            Draw.Rectangle(windowWidth - 117, 373, 100, 25);
+            if (playerHP <= 50)
+            {
+                Text.Color = Color.Red;
+            }
+            else
+            {
+                Text.Color = textColor;
+            }
+            Text.Draw($"HP: {playerHP}", windowWidth - 115, 375);
         }
     }
 }
