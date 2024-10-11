@@ -79,6 +79,7 @@ namespace Game10003
         // Audio variables
         Music introMusic;
         Music deathMusic;
+        Music winMusic;
         Sound warriorAttackSound;
         Sound wizardAttackSound;
         Sound wretchAttackSound;
@@ -130,8 +131,10 @@ namespace Game10003
             wizardAttackSound = Audio.LoadSound("../../../assets/WIZARDATTACK.WAV");
             wretchAttackSound = Audio.LoadSound("../../../assets/WRETCHATTACK.WAV");
             lowHPNotificationSound = Audio.LoadSound("../../../assets/LOWHP.WAV");
+            winMusic = Audio.LoadMusic("../../../assets/WINMUSIC.WAV");
             Audio.SetVolume(introMusic, 0.25f);
             Audio.SetVolume(deathMusic, 0.25f);
+            Audio.SetVolume(winMusic, 0.25f);
 
             Audio.SetVolume(warriorAttackSound, 0.25f);
             Audio.SetVolume(wizardAttackSound, 0.25f);
@@ -188,8 +191,6 @@ namespace Game10003
             Draw.Circle(265, windowHeight - 35, 10);
             Draw.FillColor = floorColor;
             Draw.Circle(265, windowHeight - 39, 8);
-
-
         }
 
         // Overlay specific screen based on the current scene count
@@ -592,6 +593,8 @@ namespace Game10003
             if (playerScore == playerMaxScore)
             {
                 gameSceneCount = 3;
+                Audio.Stop(introMusic);
+                Audio.Play(winMusic);
             }
 
             // Score box and text
