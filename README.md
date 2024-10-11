@@ -15,4 +15,7 @@ Spacebar - to attack opponents
 If your Health drops to 0 - you will die!
 
 
-If you defeat the boss - you will win!
+If you reach 3000 score - you will win!
+
+
+WARNING: You may need to attack rather fast when reaching a higher score
