@@ -42,7 +42,7 @@ namespace Game10003
         // Player Collision variables
         bool isPlayerColliding = false;
         bool isWeaponColliding = false;
-        float enemySpeed = 0.023f;
+        float enemySpeed = 0.019f;
         Vector4 playerCollisionBox = new Vector4(0, 0, 0, 0);
         Vector4 playerWeaponCollisionBox = new Vector4(0, 0, 0, 0);
 
@@ -62,7 +62,7 @@ namespace Game10003
         Vector4[] classSelectionBoxes = [];
 
         // Color variables
-        Color backgroundColor = new Color(0, 0, 0);
+        Color backgroundColor = new Color(40, 40, 80);
         Color wallColor = new Color(120, 120, 180);
         Color wallTextureLowlightColor;
         Color wallTextureHighlightColor;
@@ -84,7 +84,6 @@ namespace Game10003
         Sound wretchAttackSound;
         Sound lowHPNotificationSound;
         bool canLowHPNotificationPlay;
-        bool canAttackSoundPlay;
 
         /// <summary>
         ///     Setup runs once before the game loop begins.
@@ -141,7 +140,6 @@ namespace Game10003
             Audio.Play(introMusic);
 
             canLowHPNotificationPlay = true;
-            canAttackSoundPlay = true;
         }
 
 
@@ -162,6 +160,36 @@ namespace Game10003
 
             // Draw texture on the walls
             DrawWallTextures();
+
+            // Draw mattress 
+            Draw.FillColor = new Color(65, 65, 65);
+            Draw.Rectangle(windowWidth - 80, windowHeight - 120, 40, 80);
+            Draw.FillColor = new Color(95, 95, 95);
+            Draw.Rectangle(windowWidth - 75, windowHeight - 115, 35, 60);
+
+            // Draw pillow
+            Draw.FillColor = new Color(160, 160, 160);
+            Draw.Rectangle(windowWidth - 75, windowHeight - 115, 30, 15);
+
+            // Draw chain
+            Draw.FillColor = Color.LightGray;
+            Draw.Circle(250, windowHeight - 20, 5);
+            Draw.FillColor = floorColor;
+            Draw.Circle(250, windowHeight - 20, 3);
+            Draw.FillColor = Color.LightGray;
+            Draw.Circle(255, windowHeight - 25, 5);
+            Draw.FillColor = floorColor;
+            Draw.Circle(255, windowHeight - 25, 3);
+            Draw.FillColor = Color.LightGray;
+            Draw.Circle(260, windowHeight - 30, 5);
+            Draw.FillColor = floorColor;
+            Draw.Circle(260, windowHeight - 30, 3);
+            Draw.FillColor = Color.LightGray;
+            Draw.Circle(265, windowHeight - 35, 10);
+            Draw.FillColor = floorColor;
+            Draw.Circle(265, windowHeight - 39, 8);
+
+
         }
 
         // Overlay specific screen based on the current scene count
@@ -279,23 +307,19 @@ namespace Game10003
                 if (playerClassIndex == 0)
                 {
                     Audio.Play(warriorAttackSound);
-                    canAttackSoundPlay = false;
                 }
                 else if (playerClassIndex == 1)
                 {
                     Audio.Play(wizardAttackSound);
-                    canAttackSoundPlay = false;
                 }
                 else if (playerClassIndex == 2)
                 {
                     Audio.Play(wretchAttackSound);
-                    canAttackSoundPlay = false;
                 }
             }
             else
             {
                 playerAttacking = false;
-                canAttackSoundPlay = true;
             }
         }
 
@@ -580,12 +604,12 @@ namespace Game10003
             // Increase enemy speed at 1000 and 2000 score
             if (playerScore == 1000)
             {
-                enemySpeed += 0.020f;
+                enemySpeed += 0.010f;
                 playerScore += 1;
             }
             else if (playerScore == 2001)
             {
-                enemySpeed += 0.004f;
+                enemySpeed += 0.008f;
                 playerScore -= 1;
             }
 

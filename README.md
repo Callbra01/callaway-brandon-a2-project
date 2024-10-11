@@ -9,7 +9,7 @@ Select a class via the main menu.
 W, A, S, D - Move your character around
 
 
-Spacebar - to attack opponents
+Spacebar - to attack opponents directly above / above and slightly adjacent, to yourself
 
 
 If your Health drops to 0 - you will die!
