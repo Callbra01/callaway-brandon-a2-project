@@ -601,16 +601,22 @@ namespace Game10003
             // Player HP box and text
             Draw.Rectangle(windowWidth - 117, 373, 100, 25);
 
-            // Increase enemy speed at 1000 and 2000 score
+            // Increase enemy speed at 1000 and 2000 score, and change room color
             if (playerScore == 1000)
             {
                 enemySpeed += 0.010f;
                 playerScore += 1;
+                floorColor = new Color(20, 60, 20);
+                wallColor = new Color(120, 180, 120);
+                wallTextureHighlightColor.A = 60;
+                wallTextureLowlightColor.A = 60;
             }
             else if (playerScore == 2001)
             {
                 enemySpeed += 0.008f;
                 playerScore -= 1;
+                floorColor = new Color(60, 20, 20);
+                wallColor = new Color(180, 120, 120);
             }
 
             // Display gold score text when player reaches half the maximum score
