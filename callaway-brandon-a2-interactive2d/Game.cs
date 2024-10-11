@@ -17,7 +17,6 @@ namespace Game10003
         // Window variables
         int windowWidth = 400;
         int windowHeight = 400;
-        int[] windowCenter = [0, 0];
 
         // Scene 0: Main Menu, 1: Game, 2: Death, 3: Win
         int gameSceneCount = 0;
@@ -25,38 +24,48 @@ namespace Game10003
         // Player variables
         int playerClassIndex = 0;
         int playerScore;
+        int playerMaxScore = 3000;
         int playerHP = 100;
         int playerSize = 40;
         int playerAreaOffset = 25;
+        bool playerAttacking = false;
         float playerMovementSpeed = 2f;
         float[] playerPosition = [0, 0];
         float[] weaponPosition = [0, 0];
-        bool playerAttacking = false;
 
         // Enemy variables
-        int spriteSize = 50;
         int enemySize = 40;
-        float[] enemyPosition = [90, -90];
         bool canEnemiesMove = false;
+        float[] enemyPosition = [90, -90];
         Vector4 enemyCollisionBox = new Vector4(90, 90, 0, 0);
 
         // Player Collision variables
         bool isPlayerColliding = false;
         bool isWeaponColliding = false;
+        float enemySpeed = 0.023f;
         Vector4 playerCollisionBox = new Vector4(0, 0, 0, 0);
         Vector4 playerWeaponCollisionBox = new Vector4(0, 0, 0, 0);
 
-        // Background variables
-        int bgColorIndex = 0;
+        // Background variables and wall coordinates
+        float[] LeftWallTextureXCoords = [];
+        float[] LeftWallTextureYCoords = [];
+        float[] RightWallTextureXCoords = [];
+        float[] RightWallTextureYCoords = [];
+        float[] BottomWallTextureXCoords = [];
+        float[] BottomWallTextureYCoords = [];
+
+        // Class selection boxes
         Vector4 warriorSelectionBox = new Vector4(100, 125, 200, 50);
         Vector4 wizardSelectionBox = new Vector4(100, 225, 200, 50);
         Vector4 wretchSelectionBox = new Vector4(100, 325, 200, 50);
-        Vector4[] classSelectionBoxes = [];
         Vector4 mousePosition = new Vector4();
+        Vector4[] classSelectionBoxes = [];
 
         // Color variables
         Color backgroundColor = new Color(0, 0, 0);
         Color wallColor = new Color(120, 120, 180);
+        Color wallTextureLowlightColor;
+        Color wallTextureHighlightColor;
         Color floorColor = new Color(20, 20, 60);
         Color enemyColor = new Color(85, 85, 100);
         Color playerSkinColor = new Color(207, 185, 151);
@@ -68,18 +77,26 @@ namespace Game10003
         Color textColor = new Color(235, 235, 215);
 
         // Audio variables
-        Music gameIntro;
+        Music introMusic;
+        Music deathMusic;
+        Sound warriorAttackSound;
+        Sound wizardAttackSound;
+        Sound wretchAttackSound;
+        Sound lowHPNotificationSound;
+        bool canLowHPNotificationPlay;
+        bool canAttackSoundPlay;
 
         /// <summary>
         ///     Setup runs once before the game loop begins.
         /// </summary>
 
-        // Setup window, Set player to center of screen
         public void Setup()
         {
-            WindowInitialization(windowWidth, windowHeight);
+            WindowInitialization();
             AudioInitialization();
-            windowCenter = [windowWidth / 2, windowHeight / 2];
+            createWallTextureCoords();
+
+            // Set player to the center of the screen
             playerPosition = [windowWidth / 2 - playerSize / 2, windowHeight / 2 - playerSize / 2];
         }
 
@@ -98,32 +115,53 @@ namespace Game10003
         }
 
         // Window Setup and Initialization
-        void WindowInitialization(int windowWidth, int windowHeight)
+        void WindowInitialization()
         {
-            Window.SetTitle("callaway-brandon-a2-game");
+            Window.SetTitle("Dungeon of Cupidity");
             Window.SetSize(windowWidth, windowHeight);
             Window.TargetFPS = 60;
         }
 
-        // Load audio variables
+        // Load audio files, set their volume, and play the intro music
         void AudioInitialization()
         {
-            gameIntro = Audio.LoadMusic("../../../assets/GAMEINTRO.WAV");
-            Audio.SetVolume(gameIntro, 0.1f);
-            Audio.Play(gameIntro);
+            introMusic = Audio.LoadMusic("../../../assets/GAMEINTRO.WAV");
+            deathMusic = Audio.LoadMusic("../../../assets/DEATHMUSIC.WAV");
+            warriorAttackSound = Audio.LoadSound("../../../assets/WARRIORATTACK.WAV");
+            wizardAttackSound = Audio.LoadSound("../../../assets/WIZARDATTACK.WAV");
+            wretchAttackSound = Audio.LoadSound("../../../assets/WRETCHATTACK.WAV");
+            lowHPNotificationSound = Audio.LoadSound("../../../assets/LOWHP.WAV");
+            Audio.SetVolume(introMusic, 0.25f);
+            Audio.SetVolume(deathMusic, 0.25f);
+
+            Audio.SetVolume(warriorAttackSound, 0.25f);
+            Audio.SetVolume(wizardAttackSound, 0.25f);
+            Audio.SetVolume(wretchAttackSound, 0.25f);
+            Audio.SetVolume(lowHPNotificationSound, 0.25f);
+            Audio.Play(introMusic);
+
+            canLowHPNotificationPlay = true;
+            canAttackSoundPlay = true;
         }
 
+
+        // Draw sprites underneath player
         void DrawBackground()
         {
             Window.ClearBackground(backgroundColor);
 
+            // Create floor
             Draw.FillColor = floorColor;
             Draw.Square(0, 0, windowWidth);
 
+            // Create walls around the edge of the screen
             Draw.FillColor = wallColor;
             Draw.Rectangle(0, 0, 40, windowHeight);
             Draw.Rectangle(windowWidth - 40, 0, 40, windowHeight);
             Draw.Rectangle(0, windowHeight - 30, windowWidth, 30);
+
+            // Draw texture on the walls
+            DrawWallTextures();
         }
 
         // Overlay specific screen based on the current scene count
@@ -132,6 +170,9 @@ namespace Game10003
             // Main Menu scene, pause enemy movement, draw selection boxes
             if (gameSceneCount == 0)
             {
+                // Cover the player until a class is selected
+                Draw.FillColor = floorColor;
+                Draw.Square(playerPosition[0] - 5, playerPosition[1] - 5, playerSize + 15);
                 // Get selection box vertex positions
                 Vector4[] classSelectionBoxes = [warriorSelectionBox, wizardSelectionBox, wretchSelectionBox];
 
@@ -143,7 +184,7 @@ namespace Game10003
 
                 // Prevent enemies from moving, draw black overlay for main menu
                 canEnemiesMove = false;
-                Draw.FillColor = Color.Black;
+                Draw.FillColor = new Color(0, 0, 0, 150);
                 Draw.Square(0, 0, windowWidth);
 
                 // Draw top box and text
@@ -178,15 +219,7 @@ namespace Game10003
                     }
                 }
             }
-            // Game scene
-            else if (gameSceneCount == 1)
-            {
-                if (playerScore == 1000)
-                {
-                    gameSceneCount = 3;
-                }
-            }
-            // Death overlay
+            // Death overlay with red text
             else if (gameSceneCount == 2)
             {
                 playerHP = 1;
@@ -197,6 +230,7 @@ namespace Game10003
                 Text.Color = Color.Red;
                 Text.Draw("~~~YOU HAVE DIED~~~\n\n\n~~~~~PRESS ESC~~~~~", windowWidth / 2 - 125, windowHeight / 2 - 50);
             }
+            // Win overlay with black text
             else if (gameSceneCount == 3)
             {
                 canEnemiesMove = false;
@@ -239,21 +273,30 @@ namespace Game10003
             }
 
             // Player attack check
-            if (Input.IsKeyboardKeyDown(KeyboardInput.Space))
+            if (Input.IsKeyboardKeyPressed(KeyboardInput.Space))
             {
                 playerAttacking = true;
+                if (playerClassIndex == 0)
+                {
+                    Audio.Play(warriorAttackSound);
+                    canAttackSoundPlay = false;
+                }
+                else if (playerClassIndex == 1)
+                {
+                    Audio.Play(wizardAttackSound);
+                    canAttackSoundPlay = false;
+                }
+                else if (playerClassIndex == 2)
+                {
+                    Audio.Play(wretchAttackSound);
+                    canAttackSoundPlay = false;
+                }
             }
             else
             {
                 playerAttacking = false;
+                canAttackSoundPlay = true;
             }
-        }
-
-        // Linearly interpolate a sprite's vector to a given vector's position
-        // Vector4.Lerp only accepts a minimum step value of 0.1f, which is makes the enemy too fast
-        Vector4 InterpolateSpritePositions(Vector4 startVector, Vector4 endVector, float steps)
-        {
-            return (startVector + (endVector - startVector) * steps);
         }
 
         // Check different sprite collisions
@@ -262,6 +305,7 @@ namespace Game10003
             // Initialize and update collision boxes 
             playerCollisionBox = GetSpriteVertexPositions(playerPosition, playerSize);
             enemyCollisionBox = GetSpriteVertexPositions(enemyPosition, enemySize);
+
             // Weapon position array is used for positioning weapon sprite
             if (playerAttacking)
             {
@@ -284,10 +328,8 @@ namespace Game10003
                 weaponPosition = [playerPosition[0] + 8 * 4, playerPosition[1] + 7 * 4];
             }
 
-            // Weapon collision box is for the actual damage check
+            // When weapon collides with the enemy, disable movement. If enemy collides player minus player HP
             playerWeaponCollisionBox = GetSpriteVertexPositions([playerPosition[0] + 4, playerPosition[1] - playerSize + 5], playerSize - 8);
-            Draw.FillColor = Color.White;
-
             if (isSpriteColliding(enemyCollisionBox, playerWeaponCollisionBox) && playerAttacking)
             {
                 canEnemiesMove = false;
@@ -304,37 +346,27 @@ namespace Game10003
             }
         }
 
-        // Returns the 4 points of a sprite rectangle, given the position array and a size scalar
-        Vector4 GetSpriteVertexPositions(float[] spritePos, int spriteSize)
-        {
-            Vector4 spriteVertexPositions;
-            spriteVertexPositions.X = spritePos[0];
-            spriteVertexPositions.Y = spritePos[1];
-            spriteVertexPositions.Z = spritePos[0] + spriteSize;
-            spriteVertexPositions.W = spritePos[1] + spriteSize;
-            return spriteVertexPositions;
-        }
-
         // Returns true if a given sprites vertex positions intersects the players vertex positions
-        bool isSpriteColliding(Vector4 spritePos, Vector4 playerPos)
+        bool isSpriteColliding(Vector4 spritePos, Vector4 sprite2Pos)
         {
+            // Loop through all 
             isPlayerColliding = false;
-            if (spritePos.X >= playerPos.X && spritePos.X <= playerPos.Z && spritePos.Y >= playerPos.Y && spritePos.Y <= playerPos.W)
+            if (spritePos.X >= sprite2Pos.X && spritePos.X <= sprite2Pos.Z && spritePos.Y >= sprite2Pos.Y && spritePos.Y <= sprite2Pos.W)
             {
                 isPlayerColliding = true;
                 return true;
             }
-            else if (spritePos.X >= playerPos.X && spritePos.X <= playerPos.Z && spritePos.W >= playerPos.Y && spritePos.W <= playerPos.W)
+            else if (spritePos.X >= sprite2Pos.X && spritePos.X <= sprite2Pos.Z && spritePos.W >= sprite2Pos.Y && spritePos.W <= sprite2Pos.W)
             {
                 isPlayerColliding = true;
                 return true;
             }
-            else if (spritePos.Z >= playerPos.X && spritePos.Z <= playerPos.Z && spritePos.Y >= playerPos.Y && spritePos.Y <= playerPos.W)
+            else if (spritePos.Z >= sprite2Pos.X && spritePos.Z <= sprite2Pos.Z && spritePos.Y >= sprite2Pos.Y && spritePos.Y <= sprite2Pos.W)
             {
                 isPlayerColliding = true;
                 return true;
             }
-            else if (spritePos.Z >= playerPos.X && spritePos.Z <= playerPos.Z && spritePos.W >= playerPos.Y && spritePos.W <= playerPos.W)
+            else if (spritePos.Z >= sprite2Pos.X && spritePos.Z <= sprite2Pos.Z && spritePos.W >= sprite2Pos.Y && spritePos.W <= sprite2Pos.W)
             {
                 isPlayerColliding = true;
                 return true;
@@ -345,16 +377,25 @@ namespace Game10003
             }
         }
 
-        // Draw square  at player position
+        // Draw player sprite and handle HP
         void DrawPlayerSprite(int classIndex)
         {
-            // PlayerHP check
+
+            // Play death music when HP hits 0, player low HP sound when player is under 50HP
             if (playerHP <= 0)
             {
                 gameSceneCount = 2;
+                Audio.Stop(introMusic);
+                Audio.Play(deathMusic);
+            }
+            else if (playerHP < 50 && canLowHPNotificationPlay)
+            {
+                Audio.Play(lowHPNotificationSound);
+                canLowHPNotificationPlay = false;
             }
 
             Draw.LineColor = Color.Clear;
+
             // If player selected Warrior, draw warrior and their respective weapon
             if (playerClassIndex == 0)
             {
@@ -476,9 +517,10 @@ namespace Game10003
             Draw.Rectangle(playerPosition[0] + 16, playerPosition[1] + 16, 8, 4);
         }
 
+        // Update enemy position and collision box, draw enemy sprite
         void DrawEnemy()
         {
-            enemyCollisionBox = InterpolateSpritePositions(enemyCollisionBox, playerCollisionBox, 0.023f);
+            enemyCollisionBox = InterpolateSpritePositions(enemyCollisionBox, playerCollisionBox, enemySpeed);
             enemyPosition[0] = enemyCollisionBox.X;
             enemyPosition[1] = enemyCollisionBox.Y;
 
@@ -506,10 +548,10 @@ namespace Game10003
             Draw.Rectangle(enemyPosition[0] + 24, enemyPosition[1] + 20, 4, 8);
         }
 
-        // If out of main menu, allow enemy movement via linear interpolation of vector4 positions
+        // Randomly spawn the enemy above the screen if enemies can move and players have not reached max score
         void HandleEnemy()
         {
-            if (canEnemiesMove && playerScore < 1000)
+            if (canEnemiesMove && playerScore < playerMaxScore)
             {
                 DrawEnemy();
             }
@@ -522,13 +564,33 @@ namespace Game10003
         // Draw score text with a black background, check score for win state
         void HandlePlayerScore()
         {
+            // Display win scene when score is maxxed
+            if (playerScore == playerMaxScore)
+            {
+                gameSceneCount = 3;
+            }
+
             // Score box and text
             Draw.FillColor = Color.Black;
             Draw.Rectangle(13, 373, 110 + 50, 25);
 
-            Text.Size = 25;
+            // Player HP box and text
+            Draw.Rectangle(windowWidth - 117, 373, 100, 25);
 
-            if (playerScore >= 1000)
+            // Increase enemy speed at 1000 and 2000 score
+            if (playerScore == 1000)
+            {
+                enemySpeed += 0.020f;
+                playerScore += 1;
+            }
+            else if (playerScore == 2001)
+            {
+                enemySpeed += 0.004f;
+                playerScore -= 1;
+            }
+
+            // Display gold score text when player reaches half the maximum score
+            if (playerScore >= playerMaxScore / 2)
             {
                 Text.Color = new Color(255, 255, 0);
             }
@@ -536,10 +598,9 @@ namespace Game10003
             {
                 Text.Color = textColor;
             }
+            Text.Size = 25;
             Text.Draw($"SCORE: {playerScore}", 15, 375);
 
-            // Player HP box and text
-            Draw.Rectangle(windowWidth - 117, 373, 100, 25);
             if (playerHP <= 50)
             {
                 Text.Color = Color.Red;
@@ -549,6 +610,84 @@ namespace Game10003
                 Text.Color = textColor;
             }
             Text.Draw($"HP: {playerHP}", windowWidth - 115, 375);
+        }
+
+        // Assign all three wall arrays random values within the base wall.
+        void createWallTextureCoords()
+        {
+            int count = 200;
+
+            // Lowlights are darker than the given wall color, Highlights are brighter
+            wallTextureLowlightColor = wallColor;
+            wallTextureHighlightColor = wallColor;
+            wallTextureLowlightColor.R -= 20;
+            wallTextureLowlightColor.G -= 20;
+            wallTextureLowlightColor.B -= 20;
+            wallTextureHighlightColor.R += 20;
+            wallTextureHighlightColor.G += 20;
+            wallTextureHighlightColor.B += 20;
+
+            LeftWallTextureXCoords = new float[count];
+            LeftWallTextureYCoords = new float[count];
+
+            RightWallTextureXCoords = new float[count];
+            RightWallTextureYCoords = new float[count];
+
+            BottomWallTextureXCoords = new float[count];
+            BottomWallTextureYCoords = new float[count];
+
+
+            // Assign random coords within the area of a given wall
+            for (int i = 0; i < count; i++)
+            {
+                LeftWallTextureXCoords[i] = Random.Integer(0, 30);
+                LeftWallTextureYCoords[i] = Random.Integer(0, windowHeight);
+
+                RightWallTextureXCoords[i] = Random.Integer(windowWidth - 35, windowWidth);
+                RightWallTextureYCoords[i] = Random.Integer(0, windowHeight);
+
+                BottomWallTextureXCoords[i] = Random.Integer(0, windowWidth);
+                BottomWallTextureYCoords[i] = Random.Integer(windowHeight - 30, windowHeight);
+            }
+        }
+
+        // Draw random texture of dungeon walls 
+        void DrawWallTextures()
+        {
+            // Loop through texture coords, half are assigned as brighter, other half is assigned as lowlights
+            for (int currentCoord = 0; currentCoord < LeftWallTextureXCoords.Length; currentCoord++)
+            {
+                if (currentCoord <= LeftWallTextureXCoords.Length / 2)
+                {
+                    Draw.FillColor = wallTextureLowlightColor;
+                }
+                else
+                {
+                    Draw.FillColor = wallTextureHighlightColor;
+                }
+                // Draw texture on all dungeon walls
+                Draw.Square(LeftWallTextureXCoords[currentCoord], LeftWallTextureYCoords[currentCoord], 10);
+                Draw.Square(RightWallTextureXCoords[currentCoord], RightWallTextureYCoords[currentCoord], 10);
+                Draw.Square(BottomWallTextureXCoords[currentCoord], BottomWallTextureYCoords[currentCoord], 10);
+            }
+        }
+
+        // Linearly interpolate a sprite's vector to a given vector's position
+        // Vector4.Lerp only accepts a minimum step value of 0.1f, which is makes the enemy too fast
+        Vector4 InterpolateSpritePositions(Vector4 startVector, Vector4 endVector, float steps)
+        {
+            return (startVector + (endVector - startVector) * steps);
+        }
+
+        // Returns the 4 points of a sprite rectangle, given the position array and a size scalar
+        Vector4 GetSpriteVertexPositions(float[] spritePos, int spriteSize)
+        {
+            Vector4 spriteVertexPositions;
+            spriteVertexPositions.X = spritePos[0];
+            spriteVertexPositions.Y = spritePos[1];
+            spriteVertexPositions.Z = spritePos[0] + spriteSize;
+            spriteVertexPositions.W = spritePos[1] + spriteSize;
+            return spriteVertexPositions;
         }
     }
 }
